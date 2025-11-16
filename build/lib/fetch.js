@@ -16,6 +16,7 @@ const fancy_log_1 = __importDefault(require("fancy-log"));
 const ansi_colors_1 = __importDefault(require("ansi-colors"));
 const crypto_1 = __importDefault(require("crypto"));
 const through2_1 = __importDefault(require("through2"));
+const undici_1 = require("undici");
 function fetchUrls(urls, options) {
     if (options === undefined) {
         options = {};
@@ -45,11 +46,20 @@ async function fetchUrl(url, options, retries = 10, retryDelay = 1000) {
         }
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30 * 1000);
+        // Add proxy support
+        const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
+        const fetchOptions = {
+            ...options.nodeFetchOptions,
+            signal: controller.signal
+        };
+        if (proxyUrl && !fetchOptions.dispatcher) {
+            fetchOptions.dispatcher = new undici_1.ProxyAgent(proxyUrl);
+            if (verbose) {
+                (0, fancy_log_1.default)(`Using proxy: ${proxyUrl} for ${url}`);
+            }
+        }
         try {
-            const response = await fetch(url, {
-                ...options.nodeFetchOptions,
-                signal: controller.signal
-            });
+            const response = await fetch(url, fetchOptions);
             if (verbose) {
                 (0, fancy_log_1.default)(`Fetch completed: Status ${response.status}. Took ${ansi_colors_1.default.magenta(`${new Date().getTime() - startTime} ms`)}`);
             }

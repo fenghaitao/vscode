@@ -10,6 +10,7 @@ import ansiColors from 'ansi-colors';
 import crypto from 'crypto';
 import through2 from 'through2';
 import { Stream } from 'stream';
+import { ProxyAgent } from 'undici';
 
 export interface IFetchOptions {
 	base?: string;
@@ -51,11 +52,23 @@ export async function fetchUrl(url: string, options: IFetchOptions, retries = 10
 		}
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 30 * 1000);
+		
+		// Add proxy support
+		const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
+		const fetchOptions: RequestInit & { dispatcher?: any } = {
+			...options.nodeFetchOptions,
+			signal: controller.signal
+		};
+		
+		if (proxyUrl && !fetchOptions.dispatcher) {
+			fetchOptions.dispatcher = new ProxyAgent(proxyUrl);
+			if (verbose) {
+				log(`Using proxy: ${proxyUrl} for ${url}`);
+			}
+		}
+		
 		try {
-			const response = await fetch(url, {
-				...options.nodeFetchOptions,
-				signal: controller.signal
-			});
+			const response = await fetch(url, fetchOptions);
 			if (verbose) {
 				log(`Fetch completed: Status ${response.status}. Took ${ansiColors.magenta(`${new Date().getTime() - startTime} ms`)}`);
 			}
