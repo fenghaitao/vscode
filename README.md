@@ -76,3 +76,27 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 Copyright (c) Microsoft Corporation. All rights reserved.
 
 Licensed under the [MIT](LICENSE.txt) license.
+
+## Running with Proxy
+
+If you need to run VSCode behind a corporate proxy, use the `run-with-proxy.sh` script:
+
+```bash
+# Set proxy environment variables
+export HTTP_PROXY=http://proxy.example.com:8080
+export HTTPS_PROXY=http://proxy.example.com:8080
+
+# Run code.sh with proxy
+./run-with-proxy.sh scripts/code.sh
+
+# Run code-server.sh with proxy
+./run-with-proxy.sh scripts/code-server.sh --host 0.0.0.0 --port 8080
+```
+
+The `run-with-proxy.sh` script automatically configures all necessary proxy settings including:
+- HTTP_PROXY/HTTPS_PROXY environment variables
+- Global Agent configuration for Node.js
+- Electron download proxy settings
+- SSL certificate verification bypass for corporate proxies
+
+You can also pass any arguments to the target script after specifying the script path.
